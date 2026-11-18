@@ -1,0 +1,289 @@
+// Prisma Schema for Wise Digital Garage Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  username     String      @unique
+  passwordHash String
+  fullName     String
+  role         String      @default("MANAGER") // ADMIN, MANAGER, CASHIER, STOREKEEPER, MECHANIC
+  phone        String?
+  status       String      @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  jobCards     JobCard[]   @relation("MechanicJobCards")
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Customer {
+  id           String      @id @default(uuid())
+  customerType String      @default("INDIVIDUAL") // INDIVIDUAL, INSURANCE, COMPANY
+  name         String
+  phone        String
+  tinNumber    String?
+  vatNumber    String?
+  address      String?
+  kebele       String?
+  houseNo      String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  vehicles     Vehicle[]
+  proformas    Proforma[]
+  jobCards     JobCard[]
+  invoices     Invoice[]
+  credits      CustomerCredit[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([tinNumber])
+  @@map("customers")
+}
+
+model Vehicle {
+  id            String      @id @default(uuid())
+  customerId    String
+  customer      Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  plateNumber   String      @unique
+  make          String      // e.g. Toyota, Nissan, Hyundai, Isuzu
+  model         String      // e.g. Hilux, Vitz, Corolla
+  chassisNumber String?
+  year          Int?
+  color         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  proformas     Proforma[]
+  jobCards      JobCard[]
+  invoices      Invoice[]
+
+  @@index([plateNumber])
+  @@index([customerId])
+  @@map("vehicles")
+}
+
+model InventoryPart {
+  id             String      @id @default(uuid())
+  partNumber     String      @unique // e.g. 97139-06080, 04495-60070
+  name           String      // e.g. AC Air Cleaner, Brake Shoe
+  category       String      // e.g. AC system, Brake, Suspension, Engine
+  quantity       Int         @default(0)
+  buyingPrice    Float       @default(0.0)
+  sellingPrice   Float       @default(0.0)
+  lowStockAlert  Int         @default(5)
+  unit           String      @default("Pcs") // Pcs, Lit, Set
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  jobCardParts   JobCardPart[]
+
+  @@index([name])
+  @@index([category])
+  @@map("inventory_parts")
+}
+
+model ServicesCatalog {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String   // e.g. LHS Fender [Strip & Rebuild], Engine Overhaul
+  category    String   // Body, Engine, Electrical, Painting
+  basePrice   Float    @default(0.0)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("services_catalog")
+}
+
+model Proforma {
+  id               String         @id @default(uuid())
+  proformaNumber   String         @unique // e.g. PRF-38696
+  customerId       String
+  customer         Customer       @relation(fields: [customerId], references: [id])
+  vehicleId        String
+  vehicle          Vehicle        @relation(fields: [vehicleId], references: [id])
+  insuranceCompany String?
+  claimNumber      String?
+  surveyorName     String?
+  status           String         @default("ACTIVE") // ACTIVE, CONVERTED, TERMINATED
+  validUntil       DateTime?
+  labourSubtotal   Float          @default(0.0)
+  partsSubtotal    Float          @default(0.0)
+  subTotal         Float          @default(0.0)
+  vatAmount        Float          @default(0.0) // 15%
+  fuelLubricants   Float          @default(0.0)
+  grandTotal       Float          @default(0.0)
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  items            ProformaItem[]
+  jobCards         JobCard[]
+
+  @@map("proformas")
+}
+
+model ProformaItem {
+  id          String   @id @default(uuid())
+  proformaId  String
+  proforma    Proforma @relation(fields: [proformaId], references: [id], onDelete: Cascade)
+  itemType    String   @default("REPAIR") // REPAIR (Labour) or REPLACE (Part)
+  description String
+  category    String?
+  unit        String   @default("Pcs")
+  quantity    Int      @default(1)
+  unitPrice   Float    @default(0.0)
+  totalPrice  Float    @default(0.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("proforma_items")
+}
+
+model JobCard {
+  id             String            @id @default(uuid())
+  cardNumber     String            @unique // e.g. SY_1618
+  proformaId     String?
+  proforma       Proforma?         @relation(fields: [proformaId], references: [id])
+  customerId     String
+  customer       Customer          @relation(fields: [customerId], references: [id])
+  vehicleId      String
+  vehicle        Vehicle           @relation(fields: [vehicleId], references: [id])
+  mechanicId     String?
+  mechanic       User?             @relation("MechanicJobCards", fields: [mechanicId], references: [id])
+  
+  odoMeter       Int               @default(0)
+  fuelLevel      String?           // E, 1/4, 1/2, 3/4, F
+  conditionNotes String?           // Checklist notes, scratch records
+  pricingOption  String            @default("SEPARATE") // SEPARATE, AGGREGATE
+  status         String            @default("ACTIVE") // ACTIVE, TERMINATED
+  paymentStatus  String            @default("UNPAID") // PAID, UNPAID, CREDIT
+  entryDate      DateTime          @default(now())
+  closedDate     DateTime?
+  
+  labourSubtotal Float             @default(0.0)
+  partsSubtotal  Float             @default(0.0)
+  subTotal       Float             @default(0.0)
+  vatAmount      Float             @default(0.0) // 15%
+  fuelLubricants Float             @default(0.0)
+  grandTotal     Float             @default(0.0)
+  
+  skipCardNumber Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  services       JobCardService[]
+  parts          JobCardPart[]
+  invoices       Invoice[]
+
+  @@index([cardNumber])
+  @@index([status])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([mechanicId])
+  @@map("job_cards")
+}
+
+model JobCardService {
+  id          String   @id @default(uuid())
+  jobCardId   String
+  jobCard     JobCard  @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  description String
+  category    String?
+  cost        Float    @default(0.0)
+  status      String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("job_card_services")
+}
+
+model JobCardPart {
+  id         String         @id @default(uuid())
+  jobCardId  String
+  jobCard    JobCard        @relation(fields: [jobCardId], references: [id], onDelete: Cascade)
+  partId     String?
+  part       InventoryPart? @relation(fields: [partId], references: [id])
+  partName   String
+  partNumber String?
+  category   String?
+  quantity   Int            @default(1)
+  unitPrice  Float          @default(0.0)
+  totalPrice Float          @default(0.0)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@map("job_card_parts")
+}
+
+model Invoice {
+  id            String    @id @default(uuid())
+  invoiceNumber String    @unique // e.g. INV-1001
+  fsNumber      String    // Official FS No: 00000319
+  jobCardId     String
+  jobCard       JobCard   @relation(fields: [jobCardId], references: [id])
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  vehicleId     String
+  vehicle       Vehicle   @relation(fields: [vehicleId], references: [id])
+  
+  date          DateTime  @default(now())
+  labourTotal   Float     @default(0.0)
+  partsTotal    Float     @default(0.0)
+  subTotal      Float     @default(0.0)
+  vatAmount     Float     @default(0.0) // 15%
+  fuelLubricants Float    @default(0.0)
+  grandTotal    Float     @default(0.0)
+  
+  paymentMethod String    @default("CASH") // CASH, BANK, CREDIT, CHEQUE
+  status        String    @default("PAID") // PAID, PARTIAL, UNPAID
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([invoiceNumber])
+  @@index([fsNumber])
+  @@index([jobCardId])
+  @@index([customerId])
+  @@map("invoices")
+}
+
+model CustomerCredit {
+  id            String    @id @default(uuid())
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id])
+  totalCredit   Float     @default(0.0)
+  paidAmount    Float     @default(0.0)
+  remainingDue  Float     @default(0.0)
+  lastPaymentAt DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("customer_credits")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  username  String?
+  action    String   // CREATE, UPDATE, DELETE, CONVERT, TERMINATE, LOGIN
+  entity    String   // JOB_CARD, PROFORMA, INVENTORY, CUSTOMER, INVOICE
+  entityId  String?
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
