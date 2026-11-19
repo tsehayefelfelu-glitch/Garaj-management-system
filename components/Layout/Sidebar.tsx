@@ -172,20 +172,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
         )}
 
         {showStaffMgmt && (
-          <>
-            <li className={`sidebar-item ${isActive('/users') ? 'active' : ''}`}>
-              <Link href="/users">
-                <i className="bi bi-person-gear"></i>
-                <span>Staff Management</span>
-              </Link>
-            </li>
-            <li className={`sidebar-item ${isActive('/backup') ? 'active' : ''}`}>
-              <Link href="/backup">
-                <i className="bi bi-cloud-arrow-down"></i>
-                <span>Database Backup</span>
-              </Link>
-            </li>
-          </>
+          <li className={`sidebar-item ${isActive('/users') ? 'active' : ''}`}>
+            <Link href="/users">
+              <i className="bi bi-person-gear"></i>
+              <span>Staff Management</span>
+            </Link>
+          </li>
         )}
 
         {showAuditLogs && (
