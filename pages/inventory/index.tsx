@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import axios from 'axios';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function InventoryPage() {
+  const { toast } = useToast();
   const [parts, setParts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,13 +58,13 @@ export default function InventoryPage() {
         unit,
       });
 
-      alert('Spare part registered in store successfully!');
+      toast.success('Spare part registered in store successfully!');
       setShowModal(false);
       setPartNumber('');
       setName('');
       fetchInventory();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to add spare part');
+      toast.error(err.response?.data?.error || 'Failed to add spare part');
     } finally {
       setSaving(false);
     }
@@ -83,26 +85,33 @@ export default function InventoryPage() {
         adjustQuantity: adjustQty ? parseInt(adjustQty, 10) : undefined,
       });
 
-      alert('Part updated and stock adjusted successfully!');
+      toast.success('Part updated and stock adjusted successfully!');
       setEditingPart(null);
       setAdjustQty('');
       fetchInventory();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to update part');
+      toast.error(err.response?.data?.error || 'Failed to update part');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeletePart = async (pId: string, pName: string) => {
-    if (!confirm(`Are you sure you want to delete "${pName}" from the store catalog?`)) return;
+    const ok = await confirmModal(
+      `Are you sure you want to delete "${pName}" from the store catalog?`,
+      'Delete Inventory Item',
+      'error',
+      'Yes, Delete Part',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/inventory/${pId}`);
-      alert('Spare part deleted successfully');
+      toast.success('Spare part deleted successfully');
       fetchInventory();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete part');
+      toast.error(err.response?.data?.error || 'Failed to delete part');
     }
   };
 

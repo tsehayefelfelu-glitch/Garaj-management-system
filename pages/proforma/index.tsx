@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import axios from 'axios';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function ProformaListPage() {
+  const { toast } = useToast();
   const [proformas, setProformas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('ALL');
@@ -25,26 +27,40 @@ export default function ProformaListPage() {
   };
 
   const handleConvert = async (proformaId: string) => {
-    if (!confirm('Are you sure you want to convert this Proforma into an Active Job Card? All items will be cloned to the new card.')) return;
+    const ok = await confirmModal(
+      'Are you sure you want to convert this Proforma into an Active Job Card? All items will be cloned to the new card.',
+      'Convert to Job Card',
+      'info',
+      'Yes, Convert Now',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       const res = await axios.post(`/api/proformas/${proformaId}/convert`, {});
-      alert(`Successfully converted to Job Card ${res.data.jobCard.cardNumber}!`);
+      toast.success(`Successfully converted to Job Card ${res.data.jobCard.cardNumber}!`);
       fetchProformas();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to convert proforma');
+      toast.error(err.response?.data?.error || 'Failed to convert proforma');
     }
   };
 
   const handleDeleteProforma = async (pId: string, pNum: string) => {
-    if (!confirm(`Are you sure you want to delete Proforma "${pNum}"?`)) return;
+    const ok = await confirmModal(
+      `Are you sure you want to delete Proforma "${pNum}"?`,
+      'Delete Proforma',
+      'error',
+      'Yes, Delete Proforma',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/proformas/${pId}`);
-      alert(`Proforma ${pNum} deleted successfully`);
+      toast.success(`Proforma ${pNum} deleted successfully`);
       fetchProformas();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete proforma');
+      toast.error(err.response?.data?.error || 'Failed to delete proforma');
     }
   };
 

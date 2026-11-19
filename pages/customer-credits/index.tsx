@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
 
 export default function CustomerCreditsPage() {
+  const { toast } = useToast();
   const [credits, setCredits] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,13 +42,13 @@ export default function CustomerCreditsPage() {
         notes: paymentNotes,
       });
 
-      alert('Payment recorded successfully!');
+      toast.success('Payment recorded successfully!');
       setSelectedCredit(null);
       setPaymentAmount('');
       setPaymentNotes('');
       fetchCredits();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to record payment');
+      toast.error(err.response?.data?.error || 'Failed to record payment');
     } finally {
       setRecording(false);
     }

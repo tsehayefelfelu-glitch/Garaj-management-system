@@ -3,8 +3,10 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
 
 export default function NewJobCardPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { customerId: qCustId, vehicleId: qVehId } = router.query;
 
@@ -110,14 +112,14 @@ export default function NewJobCardPage() {
 
   const handleAddPart = () => {
     if (!selectedPartId) {
-      alert('Please select a spare part from the inventory list');
+      toast.warning('Please select a spare part from the inventory list');
       return;
     }
     const part = inventoryParts.find((p) => p.id === selectedPartId);
     if (!part) return;
 
     if (part.quantity < partQty) {
-      alert(`Stock shortage: Only ${part.quantity} ${part.unit} available in stock! Cannot requisition ${partQty}.`);
+      toast.error(`Stock shortage: Only ${part.quantity} ${part.unit} available in stock! Cannot requisition ${partQty}.`);
       return;
     }
 
@@ -168,7 +170,7 @@ export default function NewJobCardPage() {
 
   const handleSaveCard = async (andClear = false) => {
     if (!selectedCustomerId || !selectedVehicleId) {
-      alert('Please select both Customer and Vehicle');
+      toast.warning('Please select both Customer and Vehicle');
       return;
     }
 
@@ -191,17 +193,17 @@ export default function NewJobCardPage() {
         parts: partsList,
       });
 
-      alert(`Job Card ${res.data.cardNumber} created successfully and stock updated!`);
+      toast.success(`Job Card ${res.data.cardNumber} created successfully and stock updated!`);
 
       if (andClear) {
         setSelectedVehicleId('');
-        setServicesList([{ description: 'Estimation for labour cost', category: 'General', cost: 0 }]);
+        setServicesList([]);
         setPartsList([]);
       } else {
         router.push(`/job-cards/${res.data.id}`);
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save Job Card');
+      toast.error(err.response?.data?.error || 'Failed to save Job Card');
     } finally {
       setSaving(false);
     }

@@ -3,8 +3,10 @@ import Head from 'next/head';
 import Link from 'next/link';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function ActiveJobCardsPage() {
+  const { toast } = useToast();
   const { user } = useAuth();
   const isMechanic = user?.role === 'MECHANIC';
   const [jobCards, setJobCards] = useState<any[]>([]);
@@ -27,14 +29,21 @@ export default function ActiveJobCardsPage() {
   };
 
   const handleDeleteJobCard = async (jcId: string, cardNum: string) => {
-    if (!confirm(`Are you sure you want to delete Job Card "${cardNum}"? Any requisitioned parts will be automatically refunded back to inventory.`)) return;
+    const ok = await confirmModal(
+      `Are you sure you want to delete Job Card "${cardNum}"? Any requisitioned parts will be automatically refunded back to inventory.`,
+      'Delete Job Card',
+      'error',
+      'Yes, Delete Job Card',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/job-cards/${jcId}`);
-      alert(`Job Card ${cardNum} deleted and parts restored to store.`);
+      toast.success(`Job Card ${cardNum} deleted and parts restored to store.`);
       fetchJobCards();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete Job Card');
+      toast.error(err.response?.data?.error || 'Failed to delete Job Card');
     }
   };
 

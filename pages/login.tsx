@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import Head from 'next/head';
 
 export default function LoginPage() {
+  const { toast } = useToast();
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
@@ -135,7 +137,7 @@ export default function LoginPage() {
                   className="forgot-link small"
                   onClick={(e) => {
                     e.preventDefault();
-                    alert('Please contact the Garage System Administrator or Manager to reset your account password.');
+                    toast.info('Please contact the Garage System Administrator or Manager to reset your account password.');
                   }}
                 >
                   Forgot password?

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { useToast } from '@/context/ToastContext';
 
 export default function NewProformaPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { customerId: qCustId, vehicleId: qVehId } = router.query;
 
@@ -98,7 +100,7 @@ export default function NewProformaPage() {
 
   const handleSave = async (andPrint = false) => {
     if (!selectedCustomerId || !selectedVehicleId) {
-      alert('Please select Customer and Vehicle');
+      toast.warning('Please select Customer and Vehicle');
       return;
     }
 
@@ -115,14 +117,14 @@ export default function NewProformaPage() {
         items,
       });
 
-      alert(`Proforma ${res.data.proformaNumber} generated successfully!`);
+      toast.success(`Proforma ${res.data.proformaNumber} generated successfully!`);
       if (andPrint) {
         router.push(`/proforma/${res.data.id}/print`);
       } else {
         router.push('/proforma');
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to save proforma');
+      toast.error(err.response?.data?.error || 'Failed to save proforma');
     } finally {
       setSaving(false);
     }

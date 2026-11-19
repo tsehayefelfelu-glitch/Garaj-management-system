@@ -3,9 +3,11 @@ import Head from 'next/head';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/router';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function UsersManagementPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
 
   const [users, setUsers] = useState<any[]>([]);
@@ -22,7 +24,7 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     if (user && user.role !== 'ADMIN') {
-      alert('Access restricted: Only Admin can access Staff Management');
+      toast.warning('Access restricted: Only Admin can access Staff Management');
       router.push('/dashboard');
       return;
     }
@@ -53,7 +55,7 @@ export default function UsersManagementPage() {
         phone,
       });
 
-      alert(`Staff user "${username}" created successfully!`);
+      toast.success(`Staff user "${username}" created successfully!`);
       setShowModal(false);
       setUsername('');
       setPassword('');
@@ -61,21 +63,28 @@ export default function UsersManagementPage() {
       setPhone('');
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to create user');
+      toast.error(err.response?.data?.error || 'Failed to create user');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteUser = async (uId: string, uName: string) => {
-    if (!confirm(`Are you sure you want to permanently delete user "${uName}"?`)) return;
+    const confirmed = await confirmModal(
+      `Are you sure you want to permanently delete user "${uName}"?`,
+      'Delete Staff Account',
+      'error',
+      'Yes, Delete User',
+      'Cancel'
+    );
+    if (!confirmed) return;
 
     try {
       await axios.delete(`/api/users/${uId}`);
-      alert('User deleted successfully');
+      toast.success('User deleted successfully');
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete user');
+      toast.error(err.response?.data?.error || 'Failed to delete user');
     }
   };
 
@@ -83,9 +92,10 @@ export default function UsersManagementPage() {
     const nextStatus = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     try {
       await axios.put(`/api/users/${u.id}`, { status: nextStatus });
+      toast.info(`User status updated to ${nextStatus}`);
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to update user status');
+      toast.error(err.response?.data?.error || 'Failed to update user status');
     }
   };
 

@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import axios from 'axios';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function CustomersPage() {
+  const { toast } = useToast();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,22 +18,29 @@ export default function CustomersPage() {
     try {
       const res = await axios.get('/api/customers');
       setCustomers(res.data);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Failed to load customers');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteCustomer = async (cId: string, cName: string) => {
-    if (!confirm(`Are you sure you want to delete customer "${cName}"?`)) return;
+    const ok = await confirmModal(
+      `Are you sure you want to delete customer "${cName}"?`,
+      'Delete Customer',
+      'error',
+      'Yes, Delete',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/customers/${cId}`);
-      alert('Customer deleted successfully');
+      toast.success('Customer deleted successfully');
       fetchCustomers();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete customer');
+      toast.error(err.response?.data?.error || 'Failed to delete customer');
     }
   };
 

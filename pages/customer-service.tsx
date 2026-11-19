@@ -3,8 +3,10 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function CustomerServicePage() {
+  const { toast } = useToast();
   const router = useRouter();
   const [searchName, setSearchName] = useState('');
   const [searchPhone, setSearchPhone] = useState('');
@@ -124,7 +126,7 @@ export default function CustomerServicePage() {
         handleSearch();
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Error saving customer');
+      toast.error(err.response?.data?.error || 'Error saving customer');
     } finally {
       setSaving(false);
     }
@@ -145,25 +147,32 @@ export default function CustomerServicePage() {
         address: editingCustomer.address,
       });
 
-      alert('Customer updated successfully');
+      toast.success('Customer updated successfully');
       setEditingCustomer(null);
       handleSearch();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to update customer');
+      toast.error(err.response?.data?.error || 'Failed to update customer');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteCustomer = async (cId: string, cName: string) => {
-    if (!confirm(`Are you sure you want to delete customer "${cName}"?`)) return;
+    const ok = await confirmModal(
+      `Are you sure you want to delete customer "${cName}"?`,
+      'Delete Customer',
+      'error',
+      'Yes, Delete Customer',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/customers/${cId}`);
-      alert('Customer deleted successfully');
+      toast.success('Customer deleted successfully');
       handleSearch();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete customer');
+      toast.error(err.response?.data?.error || 'Failed to delete customer');
     }
   };
 

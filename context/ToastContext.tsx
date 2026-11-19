@@ -26,6 +26,13 @@ interface ToastContextType {
   removeToast: (id: string) => void;
   showModalPopup: (options: ModalPopupOptions) => void;
   closeModalPopup: () => void;
+  confirmModal: (
+    message: string,
+    title?: string,
+    type?: ToastType,
+    confirmText?: string,
+    cancelText?: string
+  ) => Promise<boolean>;
   toast: {
     success: (message: string, title?: string) => void;
     error: (message: string, title?: string) => void;
@@ -33,6 +40,31 @@ interface ToastContextType {
     info: (message: string, title?: string) => void;
   };
 }
+
+let globalShowToast: ((message: string, type?: ToastType, title?: string) => void) | null = null;
+let globalConfirmModalHandler: (
+  (message: string, title?: string, type?: ToastType, confirmText?: string, cancelText?: string) => Promise<boolean>
+) | null = null;
+
+export const globalToast = {
+  success: (message: string, title?: string) => globalShowToast?.(message, 'success', title),
+  error: (message: string, title?: string) => globalShowToast?.(message, 'error', title),
+  warning: (message: string, title?: string) => globalShowToast?.(message, 'warning', title),
+  info: (message: string, title?: string) => globalShowToast?.(message, 'info', title),
+};
+
+export const confirmModal = (
+  message: string,
+  title: string = 'Please Confirm',
+  type: ToastType = 'warning',
+  confirmText: string = 'Yes, Proceed',
+  cancelText: string = 'Cancel'
+): Promise<boolean> => {
+  if (globalConfirmModalHandler) {
+    return globalConfirmModalHandler(message, title, type, confirmText, cancelText);
+  }
+  return Promise.resolve(window.confirm(message));
+};
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
@@ -75,7 +107,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       case 'error':
         return 'Error Notice';
       case 'warning':
-        return 'Attention';
+        return 'Attention Required';
       case 'info':
       default:
         return 'Information';
@@ -97,8 +129,36 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setModalPopup(null);
   };
 
-  // Replace default window.alert with modern popup toast
+  const confirmModalLocal = (
+    message: string,
+    title: string = 'Please Confirm',
+    type: ToastType = 'warning',
+    confirmText: string = 'Yes, Proceed',
+    cancelText: string = 'Cancel'
+  ): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setModalPopup({
+        title,
+        message,
+        type,
+        confirmText,
+        cancelText,
+        onConfirm: () => {
+          setModalPopup(null);
+          resolve(true);
+        },
+        onCancel: () => {
+          setModalPopup(null);
+          resolve(false);
+        },
+      });
+    });
+  };
+
   useEffect(() => {
+    globalShowToast = showToast;
+    globalConfirmModalHandler = confirmModalLocal;
+
     if (typeof window !== 'undefined') {
       window.alert = (msg: any) => {
         const text = String(msg || '');
@@ -147,6 +207,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         removeToast,
         showModalPopup,
         closeModalPopup,
+        confirmModal: confirmModalLocal,
         toast,
       }}
     >
@@ -220,7 +281,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         ))}
       </div>
 
-      {/* Centered Modal Popup for Critical Confirmations / Alerts */}
+      {/* Centered Modal Popup for Confirmations / Critical Alerts */}
       {modalPopup && (
         <div
           className="modal fade show d-block"
@@ -231,22 +292,22 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             zIndex: 100000,
           }}
         >
-          <div className="modal-dialog modal-dialog-centered modal-sm" style={{ maxWidth: '440px' }}>
+          <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '440px' }}>
             <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden text-center p-4">
               <div
                 className="rounded-circle d-inline-flex align-items-center justify-content-center mx-auto mb-3"
                 style={{
                   width: '64px',
                   height: '64px',
-                  backgroundColor: getBgColor(modalPopup.type || 'info'),
-                  color: getBorderColor(modalPopup.type || 'info'),
+                  backgroundColor: getBgColor(modalPopup.type || 'warning'),
+                  color: getBorderColor(modalPopup.type || 'warning'),
                 }}
               >
-                <i className={`${getIconClass(modalPopup.type || 'info')} fs-2`}></i>
+                <i className={`${getIconClass(modalPopup.type || 'warning')} fs-2`}></i>
               </div>
 
               <h5 className="fw-bold text-dark mb-2">
-                {modalPopup.title || getDefaultTitle(modalPopup.type || 'info')}
+                {modalPopup.title || getDefaultTitle(modalPopup.type || 'warning')}
               </h5>
               <p className="text-secondary mb-4" style={{ fontSize: '0.92rem', lineHeight: '1.5' }}>
                 {modalPopup.message}
@@ -268,13 +329,13 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 <button
                   type="button"
                   className="btn px-4 py-2 rounded-3 fw-semibold text-white shadow-sm"
-                  style={{ backgroundColor: getBorderColor(modalPopup.type || 'info') }}
+                  style={{ backgroundColor: getBorderColor(modalPopup.type || 'warning') }}
                   onClick={() => {
                     modalPopup.onConfirm?.();
                     closeModalPopup();
                   }}
                 >
-                  {modalPopup.confirmText || 'OK, Got it'}
+                  {modalPopup.confirmText || 'Confirm'}
                 </button>
               </div>
             </div>

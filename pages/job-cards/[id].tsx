@@ -4,8 +4,10 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function JobCardDetailPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { id } = router.query;
   const { user } = useAuth();
@@ -51,27 +53,35 @@ export default function JobCardDetailPage() {
         customFsNumber: customFsNumber || undefined,
       });
 
-      alert('Job Card successfully terminated & Official Attachment Cash Invoice generated!');
+      toast.success('Job Card successfully terminated & Official Attachment Cash Invoice generated!');
       setShowTerminateModal(false);
       fetchCardDetails();
       if (res.data.invoice?.id) {
         router.push(`/invoices/${res.data.invoice.id}/print`);
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to terminate card');
+      toast.error(err.response?.data?.error || 'Failed to terminate card');
     } finally {
       setTerminating(false);
     }
   };
 
   const handleDeleteCard = async () => {
-    if (!confirm('Are you sure you want to delete this Job Card? Any requisitioned parts will be refunded to store.')) return;
+    const ok = await confirmModal(
+      'Are you sure you want to delete this Job Card? Any requisitioned parts will be refunded to store.',
+      'Delete Job Card',
+      'error',
+      'Yes, Delete Job Card',
+      'Cancel'
+    );
+    if (!ok) return;
+
     try {
       await axios.delete(`/api/job-cards/${id}`);
-      alert('Job Card deleted successfully');
+      toast.success('Job Card deleted successfully');
       router.push('/job-cards');
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete card');
+      toast.error(err.response?.data?.error || 'Failed to delete card');
     }
   };
 

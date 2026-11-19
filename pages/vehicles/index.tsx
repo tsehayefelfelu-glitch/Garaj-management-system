@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import axios from 'axios';
+import { useToast, confirmModal } from '@/context/ToastContext';
 
 export default function VehiclesPage() {
+  const { toast } = useToast();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,25 +43,32 @@ export default function VehiclesPage() {
         color: editingVehicle.color,
       });
 
-      alert('Vehicle updated successfully');
+      toast.success('Vehicle updated successfully');
       setEditingVehicle(null);
       fetchVehicles();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to update vehicle');
+      toast.error(err.response?.data?.error || 'Failed to update vehicle');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteVehicle = async (vId: string, plate: string) => {
-    if (!confirm(`Are you sure you want to delete vehicle "${plate}"?`)) return;
+    const ok = await confirmModal(
+      `Are you sure you want to delete vehicle "${plate}"?`,
+      'Delete Vehicle',
+      'error',
+      'Yes, Delete Vehicle',
+      'Cancel'
+    );
+    if (!ok) return;
 
     try {
       await axios.delete(`/api/vehicles/${vId}`);
-      alert(`Vehicle ${plate} deleted successfully`);
+      toast.success(`Vehicle ${plate} deleted successfully`);
       fetchVehicles();
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete vehicle');
+      toast.error(err.response?.data?.error || 'Failed to delete vehicle');
     }
   };
 
