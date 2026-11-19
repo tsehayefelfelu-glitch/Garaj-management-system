@@ -4,22 +4,14 @@ const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
+  console.log('Checking database seed status...');
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log('Database already seeded. Skipping to preserve customer data.');
+    return;
+  }
   console.log('Seeding Wise Digital Garage Database...');
 
-  // 1. Clean up existing records
-  await prisma.auditLog.deleteMany();
-  await prisma.invoice.deleteMany();
-  await prisma.jobCardPart.deleteMany();
-  await prisma.jobCardService.deleteMany();
-  await prisma.jobCard.deleteMany();
-  await prisma.proformaItem.deleteMany();
-  await prisma.proforma.deleteMany();
-  await prisma.customerCredit.deleteMany();
-  await prisma.vehicle.deleteMany();
-  await prisma.customer.deleteMany();
-  await prisma.inventoryPart.deleteMany();
-  await prisma.servicesCatalog.deleteMany();
-  await prisma.user.deleteMany();
 
   // 2. Users with hashed passwords
   const passwordHash = await bcrypt.hash('admin123', 10);
