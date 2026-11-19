@@ -48,9 +48,7 @@ export default function NewJobCardPage() {
   });
 
   // Tab 2: Services
-  const [servicesList, setServicesList] = useState<any[]>([
-    { description: 'Estimation for labour cost', category: 'General', cost: 3000 },
-  ]);
+  const [servicesList, setServicesList] = useState<any[]>([]);
   const [newServiceDesc, setNewServiceDesc] = useState('');
   const [newServiceCost, setNewServiceCost] = useState('');
 
@@ -684,22 +682,30 @@ export default function NewJobCardPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {servicesList.map((s, idx) => (
-                      <tr key={idx}>
-                        <td>{idx + 1}</td>
-                        <td>{s.description}</td>
-                        <td className="fw-semibold">{(parseFloat(s.cost) || 0).toLocaleString()}</td>
-                        <td className="text-center">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger py-0 px-1"
-                            onClick={() => handleRemoveService(idx)}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                    {servicesList.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted py-3 small">
+                          <i className="bi bi-inbox me-1"></i> No labour services added yet. Enter service description and cost above, then click <strong>Add Service</strong>.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      servicesList.map((s, idx) => (
+                        <tr key={idx}>
+                          <td>{idx + 1}</td>
+                          <td>{s.description}</td>
+                          <td className="fw-semibold">{(parseFloat(s.cost) || 0).toLocaleString()}</td>
+                          <td className="text-center">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger py-0 px-1"
+                              onClick={() => handleRemoveService(idx)}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                   <tfoot>
                     <tr>

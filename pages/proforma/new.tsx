@@ -20,10 +20,7 @@ export default function NewProformaPage() {
   const [notes, setNotes] = useState('As Per The Lists Indicate In Insurance Survey Report');
 
   // Items (Repair & Replace)
-  const [items, setItems] = useState<any[]>([
-    { itemType: 'REPAIR', description: 'LHS Fender [Strip & Rebuild]', unit: 'Pcs', quantity: 1, unitPrice: 45000, totalPrice: 45000 },
-    { itemType: 'REPAIR', description: 'FR Bumper [Strip & Rebuild]', unit: 'Pcs', quantity: 1, unitPrice: 0, totalPrice: 0 },
-  ]);
+  const [items, setItems] = useState<any[]>([]);
 
   // Form input for new item
   const [newItemType, setNewItemType] = useState<'REPAIR' | 'REPLACE'>('REPAIR');
@@ -321,30 +318,39 @@ export default function NewProformaPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, idx) => (
-                  <tr key={idx}>
-                    <td>{idx + 1}</td>
-                    <td>
-                      <span className={`badge ${item.itemType === 'REPAIR' ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-warning-emphasis'}`}>
-                        {item.itemType}
-                      </span>
-                    </td>
-                    <td className="fw-semibold">{item.description}</td>
-                    <td>{item.unit}</td>
-                    <td>{item.quantity}</td>
-                    <td>{item.unitPrice.toLocaleString()}</td>
-                    <td className="fw-bold">{item.totalPrice.toLocaleString()}</td>
-                    <td className="text-center">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-danger py-0 px-1"
-                        onClick={() => handleRemoveItem(idx)}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
+                {items.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center text-muted py-4 small">
+                      <i className="bi bi-inbox fs-4 d-block mb-1 text-secondary"></i>
+                      No estimation items added yet. Use the form above to add repair or replace items.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>{idx + 1}</td>
+                      <td>
+                        <span className={`badge ${item.itemType === 'REPAIR' ? 'bg-info-subtle text-info-emphasis' : 'bg-warning-subtle text-warning-emphasis'}`}>
+                          {item.itemType}
+                        </span>
+                      </td>
+                      <td className="fw-semibold">{item.description}</td>
+                      <td>{item.unit}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.unitPrice.toLocaleString()}</td>
+                      <td className="fw-bold">{item.totalPrice.toLocaleString()}</td>
+                      <td className="text-center">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-danger py-0 px-1"
+                          onClick={() => handleRemoveItem(idx)}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
