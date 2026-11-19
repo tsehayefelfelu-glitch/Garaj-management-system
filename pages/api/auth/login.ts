@@ -73,6 +73,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   } catch (error: any) {
     console.error('Login error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    const errorMsg = error?.message || String(error);
+    return res.status(500).json({ 
+      error: `Login failed: ${errorMsg}` 
+    });
   }
 }
